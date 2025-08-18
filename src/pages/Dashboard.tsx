@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { 
   Target, 
   Calendar, 
@@ -6,11 +7,17 @@ import {
   AlertTriangle, 
   TrendingUp,
   Clock,
-  Users
+  Users,
+  RefreshCw,
+  Download,
+  Bell
 } from "lucide-react"
+import { AppLayout } from "@/components/layout/AppLayout"
 import { MetricCard } from "@/components/dashboard/MetricCard"
 import { ProgressChart } from "@/components/dashboard/ProgressChart"
 import { RecentActivity } from "@/components/dashboard/RecentActivity"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
 
 // Mock data - In real app, this would come from API
 const mockIndicators = [
@@ -84,17 +91,74 @@ const mockActivities = [
 ]
 
 export default function Dashboard() {
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [lastUpdate, setLastUpdate] = useState(new Date())
+  const { toast } = useToast()
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    setLastUpdate(new Date())
+    setIsRefreshing(false)
+    toast({
+      title: "Dashboard atualizado",
+      description: "Dados atualizados com sucesso"
+    })
+  }
+
+  const handleExport = () => {
+    toast({
+      title: "Exportando dados",
+      description: "O relatório será baixado em breve"
+    })
+  }
+
+  // Auto refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdate(new Date())
+    }, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [])
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-foreground">
-          Dashboard Estratégico
-        </h1>
-        <p className="text-muted-foreground">
-          Acompanhe o progresso do planejamento estratégico institucional
-        </p>
-      </div>
+    <AppLayout>
+      <div className="space-y-6 animate-fade-in">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-foreground">
+              Dashboard Estratégico
+            </h1>
+            <p className="text-muted-foreground">
+              Acompanhe o progresso do planejamento estratégico institucional
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Última atualização: {lastUpdate.toLocaleString('pt-BR')}
+            </p>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+          <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="min-w-[100px]"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+              </Button>
+            <Button variant="outline" size="sm">
+              <Bell className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -196,6 +260,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </AppLayout>
   )
 }
