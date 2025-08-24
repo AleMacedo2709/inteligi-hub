@@ -9,6 +9,7 @@ import {
   Filter,
   Search
 } from "lucide-react"
+import { useToast } from "@/hooks/useToast"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -181,6 +182,11 @@ const getDiasRestantes = (prazo: string) => {
 export default function Tarefas() {
   const [filtroStatus, setFiltroStatus] = useState<string>("todas")
   const [busca, setBusca] = useState<string>("")
+  const toast = useToast()
+
+  const handleCreateTask = () => {
+    toast.info("Funcionalidade de criar tarefa em desenvolvimento")
+  }
 
   const tarefasFiltradas = tarefas.filter(tarefa => {
     const matchStatus = filtroStatus === "todas" || tarefa.status === filtroStatus
@@ -213,10 +219,22 @@ export default function Tarefas() {
           
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-primary">
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Tarefa
-              </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => toast.info("Atualizando lista de tarefas")}
+            >
+              <Search className="h-4 w-4 mr-2" />
+              Pesquisar
+            </Button>
+            <Button 
+              className="bg-gradient-primary hover:opacity-90 transition-opacity"
+              onClick={handleCreateTask}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Tarefa
+            </Button>
+          </div>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>

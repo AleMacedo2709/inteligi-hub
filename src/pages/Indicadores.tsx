@@ -8,8 +8,12 @@ import {
   Target,
   Calendar,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  RefreshCw,
+  Download,
+  Eye
 } from "lucide-react"
+import { useToast } from "@/hooks/useToast"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -163,6 +167,20 @@ const calcularProgresso = (atual: number, meta: number) => {
 
 export default function Indicadores() {
   const [selectedIndicador, setSelectedIndicador] = useState<number | null>(null)
+  const toast = useToast()
+
+  const handleCreateIndicator = () => {
+    toast.info("Abrindo formulário de novo indicador")
+  }
+
+  const handleRefreshIndicators = async () => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      toast.success("Indicadores atualizados com sucesso")
+    } catch (error) {
+      toast.error("Erro ao atualizar indicadores")
+    }
+  }
 
   return (
     <AppLayout>
@@ -178,96 +196,109 @@ export default function Indicadores() {
             </p>
           </div>
           
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-primary">
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Indicador
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Criar Novo Indicador</DialogTitle>
-                <DialogDescription>
-                  Define um novo indicador para acompanhamento
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="nome" className="text-right">
-                    Nome
-                  </Label>
-                  <Input
-                    id="nome"
-                    placeholder="Nome do indicador"
-                    className="col-span-3"
-                  />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleRefreshIndicators}
+              className="hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar
+            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  className="bg-gradient-primary hover:opacity-90 transition-opacity"
+                  onClick={handleCreateIndicator}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Indicador
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Criar Novo Indicador</DialogTitle>
+                  <DialogDescription>
+                    Define um novo indicador para acompanhamento
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="nome" className="text-right">
+                      Nome
+                    </Label>
+                    <Input
+                      id="nome"
+                      placeholder="Nome do indicador"
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="unidade" className="text-right">
+                      Unidade
+                    </Label>
+                    <Input
+                      id="unidade"
+                      placeholder="%, qtd, pontos..."
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="metaAnual" className="text-right">
+                      Meta Anual
+                    </Label>
+                    <Input
+                      id="metaAnual"
+                      placeholder="0"
+                      type="number"
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="metaCiclo" className="text-right">
+                      Meta Ciclo
+                    </Label>
+                    <Input
+                      id="metaCiclo"
+                      placeholder="0"
+                      type="number"
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="frequencia" className="text-right">
+                      Frequência
+                    </Label>
+                    <Select>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Selecione a frequência" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="semanal">Semanal</SelectItem>
+                        <SelectItem value="mensal">Mensal</SelectItem>
+                        <SelectItem value="trimestral">Trimestral</SelectItem>
+                        <SelectItem value="semestral">Semestral</SelectItem>
+                        <SelectItem value="anual">Anual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="descricao" className="text-right">
+                      Descrição
+                    </Label>
+                    <Textarea
+                      id="descricao"
+                      placeholder="Descreva como calcular o indicador..."
+                      className="col-span-3"
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="unidade" className="text-right">
-                    Unidade
-                  </Label>
-                  <Input
-                    id="unidade"
-                    placeholder="%, qtd, pontos..."
-                    className="col-span-3"
-                  />
+                <div className="flex justify-end">
+                  <Button>Criar Indicador</Button>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="metaAnual" className="text-right">
-                    Meta Anual
-                  </Label>
-                  <Input
-                    id="metaAnual"
-                    placeholder="0"
-                    type="number"
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="metaCiclo" className="text-right">
-                    Meta Ciclo
-                  </Label>
-                  <Input
-                    id="metaCiclo"
-                    placeholder="0"
-                    type="number"
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="frequencia" className="text-right">
-                    Frequência
-                  </Label>
-                  <Select>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecione a frequência" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="semanal">Semanal</SelectItem>
-                      <SelectItem value="mensal">Mensal</SelectItem>
-                      <SelectItem value="trimestral">Trimestral</SelectItem>
-                      <SelectItem value="semestral">Semestral</SelectItem>
-                      <SelectItem value="anual">Anual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="descricao" className="text-right">
-                    Descrição
-                  </Label>
-                  <Textarea
-                    id="descricao"
-                    placeholder="Descreva como calcular o indicador..."
-                    className="col-span-3"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button>Criar Indicador</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Summary Cards */}

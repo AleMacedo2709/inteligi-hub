@@ -8,8 +8,13 @@ import {
   Target,
   Users,
   Filter,
-  Eye
+  Eye,
+  Settings,
+  Play,
+  Pause,
+  RefreshCw
 } from "lucide-react"
+import { useToast } from "@/hooks/useToast"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -154,6 +159,89 @@ const getTipoLabel = (tipo: string) => {
 export default function Relatorios() {
   const [filtroTipo, setFiltroTipo] = useState<string>("todos")
   const [filtroStatus, setFiltroStatus] = useState<string>("todos")
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [processingIds, setProcessingIds] = useState<Set<number>>(new Set())
+  const toast = useToast()
+
+  // Funções utilitárias
+  const handleDownload = async (relatorio: any) => {
+    if (relatorio.status !== "disponivel") {
+      toast.warning("Relatório não disponível para download")
+      return
+    }
+
+    setProcessingIds(prev => new Set(prev).add(relatorio.id))
+    
+    try {
+      // Simula download
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Simula criação e download do arquivo
+      const blob = new Blob([`Relatório: ${relatorio.nome}\nData: ${new Date().toLocaleDateString('pt-BR')}`], {
+        type: 'text/plain'
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${relatorio.nome.replace(/\s+/g, '_')}.${relatorio.formato.toLowerCase()}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      toast.success("Download realizado com sucesso")
+    } catch (error) {
+      toast.error("Erro ao fazer download do relatório")
+    } finally {
+      setProcessingIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(relatorio.id)
+        return newSet
+      })
+    }
+  }
+
+  const handlePreview = (relatorio: any) => {
+    if (relatorio.status !== "disponivel") {
+      toast.warning("Relatório não disponível para visualização")
+      return
+    }
+    
+    toast.info(`Abrindo preview: ${relatorio.nome}`)
+    // Simula abertura em nova aba
+    window.open(`/preview-relatorio/${relatorio.id}`, '_blank')
+  }
+
+  const handleGenerateCustomReport = async () => {
+    setIsGenerating(true)
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      toast.success("Relatório personalizado gerado com sucesso")
+    } catch (error) {
+      toast.error("Erro ao gerar relatório personalizado")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleToggleAutomation = async (relatorioId: string, isActive: boolean) => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      toast.success(`Automação ${isActive ? 'ativada' : 'desativada'} com sucesso`)
+    } catch (error) {
+      toast.error("Erro ao alterar automação")
+    }
+  }
+
+  const handleRefreshReports = async () => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      toast.success("Lista de relatórios atualizada")
+    } catch (error) {
+      toast.error("Erro ao atualizar relatórios")
+    }
+  }
 
   const relatoriosFiltrados = relatoriosDisponiveis.filter(relatorio => {
     const matchTipo = filtroTipo === "todos" || relatorio.tipo === filtroTipo
@@ -175,10 +263,28 @@ export default function Relatorios() {
             </p>
           </div>
           
-          <Button className="bg-gradient-primary">
-            <FileText className="h-4 w-4 mr-2" />
-            Gerar Relatório Personalizado
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleRefreshReports}
+              className="hover:bg-accent hover:text-accent-foreground"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar
+            </Button>
+            <Button 
+              className="bg-gradient-primary hover:opacity-90 transition-opacity"
+              onClick={handleGenerateCustomReport}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4 mr-2" />
+              )}
+              {isGenerating ? "Gerando..." : "Gerar Relatório Personalizado"}
+            </Button>
+          </div>
         </div>
 
         {/* Summary Cards */}
@@ -341,8 +447,9 @@ export default function Relatorios() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="flex-1"
+                          className="flex-1 hover:bg-primary hover:text-primary-foreground transition-colors"
                           disabled={relatorio.status !== "disponivel"}
+                          onClick={() => handlePreview(relatorio)}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Visualizar
@@ -350,11 +457,16 @@ export default function Relatorios() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="flex-1"
-                          disabled={relatorio.status !== "disponivel"}
+                          className="flex-1 hover:bg-accent hover:text-accent-foreground transition-colors"
+                          disabled={relatorio.status !== "disponivel" || processingIds.has(relatorio.id)}
+                          onClick={() => handleDownload(relatorio)}
                         >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
+                          {processingIds.has(relatorio.id) ? (
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4 mr-2" />
+                          )}
+                          {processingIds.has(relatorio.id) ? "Baixando..." : "Download"}
                         </Button>
                       </div>
                     </div>
@@ -415,13 +527,24 @@ export default function Relatorios() {
                 </div>
                 
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline">
+                  <Button 
+                    variant="outline"
+                    className="hover:bg-muted transition-colors"
+                  >
                     <Eye className="h-4 w-4 mr-2" />
                     Pré-visualizar
                   </Button>
-                  <Button className="bg-gradient-primary">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Gerar Relatório
+                  <Button 
+                    className="bg-gradient-primary hover:opacity-90 transition-opacity"
+                    onClick={handleGenerateCustomReport}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <FileText className="h-4 w-4 mr-2" />
+                    )}
+                    {isGenerating ? "Gerando..." : "Gerar Relatório"}
                   </Button>
                 </div>
               </CardContent>
@@ -438,42 +561,83 @@ export default function Relatorios() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                     <div>
                       <h4 className="font-medium">Relatório Estratégico Mensal</h4>
                       <p className="text-sm text-muted-foreground">Gerado automaticamente no dia 1 de cada mês</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Badge className="bg-accent text-accent-foreground">Ativo</Badge>
-                      <Button variant="outline" size="sm">Configurar</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="hover:bg-primary hover:text-primary-foreground transition-colors"
+                      >
+                        <Settings className="h-4 w-4 mr-1" />
+                        Configurar
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="hover:bg-warning hover:text-warning-foreground transition-colors"
+                        onClick={() => handleToggleAutomation("monthly", false)}
+                      >
+                        <Pause className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                     <div>
                       <h4 className="font-medium">Dashboard de Indicadores</h4>
                       <p className="text-sm text-muted-foreground">Gerado semanalmente às segundas-feiras</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Badge className="bg-accent text-accent-foreground">Ativo</Badge>
-                      <Button variant="outline" size="sm">Configurar</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="hover:bg-primary hover:text-primary-foreground transition-colors"
+                      >
+                        <Settings className="h-4 w-4 mr-1" />
+                        Configurar
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="hover:bg-warning hover:text-warning-foreground transition-colors"
+                        onClick={() => handleToggleAutomation("weekly", false)}
+                      >
+                        <Pause className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                     <div>
                       <h4 className="font-medium">Relatório de Performance de Tarefas</h4>
                       <p className="text-sm text-muted-foreground">Gerado mensalmente no último dia útil</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Badge className="bg-muted text-muted-foreground">Inativo</Badge>
-                      <Button variant="outline" size="sm">Ativar</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="hover:bg-accent hover:text-accent-foreground transition-colors"
+                        onClick={() => handleToggleAutomation("tasks", true)}
+                      >
+                        <Play className="h-4 w-4 mr-1" />
+                        Ativar
+                      </Button>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-6">
-                  <Button className="bg-gradient-primary">
+                  <Button 
+                    className="bg-gradient-primary hover:opacity-90 transition-opacity"
+                    onClick={() => toast.info("Funcionalidade de nova automação em desenvolvimento")}
+                  >
                     <Calendar className="h-4 w-4 mr-2" />
                     Nova Automação
                   </Button>
